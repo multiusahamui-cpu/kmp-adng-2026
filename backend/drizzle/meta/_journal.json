@@ -1,0 +1,34 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1771772013884,
+      "tag": "0000_aromatic_pyro",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1771951379035,
+      "tag": "0001_concerned_spacker_dave",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771972297384,
+      "tag": "0002_fixed_valeria_richards",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1772190034910,
+      "tag": "0003_omniscient_dragon_lord",
+      "breakpoints": true
+    }
+  ]
+}

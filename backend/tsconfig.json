@@ -1,0 +1,35 @@
+
+{
+  "compilerOptions": {
+    /* Basic Options */
+    "target": "ES2020",                // Lebih modern dari ES2016
+    "module": "commonjs",
+    "lib": ["es2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    
+    /* Strictness */
+    "strict": true,
+    "noImplicitAny": true,             // Menghindari tipe 'any' yang tidak disengaja
+    
+    /* Module Resolution */
+    "moduleResolution": "node",
+    "esModuleInterop": true,           // Penting untuk import library JS lama
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    /* Path Mapping (Opsional tapi keren) */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules", 
+    "dist",                            // Tambahkan dist agar tidak ikut ter-scan
+    "drizzle", 
+    "drizzle.config.ts", 
+    "drizzle.config.js"
+  ]
+}

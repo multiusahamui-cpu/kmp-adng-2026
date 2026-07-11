@@ -1,0 +1,24 @@
+
+import typography from '@tailwindcss/typography';
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
+      colors: {
+        // Custom branding colors if needed, otherwise using standard slate/emerald
+      }
+    },
+  },
+  plugins: [
+    typography,
+  ],
+}

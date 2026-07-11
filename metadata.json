@@ -1,0 +1,9 @@
+{
+  "name": " KMP-ADNG V2.0 - Koperasi Multi Pihak - Aset Digital Nusantara Garuda",
+  "description": "Salinan Lenghkap - A comprehensive Super App for the Indigenous Peoples' Digital Cooperative, featuring banking, ecommerce, community forums, and digital services.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
