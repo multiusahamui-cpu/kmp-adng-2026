@@ -28,7 +28,9 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
+    // Build straight into the backend's static folder so a single Express
+    // process (backend/src/app.ts) can serve the frontend + API from one domain.
+    outDir: 'backend/public/dist',
     emptyOutDir: true,
     sourcemap: false
   }

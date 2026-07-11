@@ -26,10 +26,12 @@
   },
   "include": ["src/**/*"],
   "exclude": [
-    "node_modules", 
+    "node_modules",
     "dist",                            // Tambahkan dist agar tidak ikut ter-scan
-    "drizzle", 
-    "drizzle.config.ts", 
-    "drizzle.config.js"
+    "drizzle",
+    "drizzle.config.ts",
+    "drizzle.config.js",
+    "src/**/*.test.ts",
+    "vitest.config.ts"
   ]
 }

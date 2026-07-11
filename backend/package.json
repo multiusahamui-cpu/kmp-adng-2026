@@ -1,13 +1,14 @@
-
 {
   "name": "kmp-adng-backend",
   "version": "1.0.0",
   "description": "Backend API for KMP-ADNG Super App (Drizzle Edition)",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/build.js",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate:pg",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
@@ -42,6 +43,7 @@
     "@types/pg": "^8.11.0",
     "drizzle-kit": "^0.20.14",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.10"
   }
 }

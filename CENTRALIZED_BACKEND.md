@@ -9,25 +9,27 @@ Tujuannya adalah menciptakan *Single Source of Truth* (Satu Sumber Kebenaran) un
 
 ## 1. Topologi Sistem
 
-Semua platform (Web Member, Internal Portal, Mobile App, Landing Page) harus terhubung ke satu Backend terpusat.
+KMP-ADNG Web App (`/src`) dan Backend API (`/backend`) di-deploy sebagai **satu proses Node.js di satu domain** (lihat [CICD.md](CICD.md)) — Express menyajikan frontend *dan* `/api/v1` sekaligus, jadi Web App memanggil API lewat relative path (same-origin), bukan domain terpisah.
+
+Proyek eksternal (Mobile App, Landing Page, Internal Portal lain) tetap terhubung ke Backend yang sama itu, tapi secara cross-origin lewat domain publik aplikasi.
 
 ```mermaid
 graph TD
     DB[(PostgreSQL Database)]
-    API[Backend API (Express + Drizzle)]
+    API[Backend API (Express + Drizzle) -- serve juga Web App]
     
     API -->|Read/Write| DB
     
-    WebMember[KMP-ADNG Web App] -->|HTTPS /api/v1| API
+    WebMember[KMP-ADNG Web App] -->|same-origin /api/v1| API
     MobileApp[Android / iOS] -->|HTTPS /api/v1| API
     LandingPage[Official Website] -->|HTTPS /api/v1| API
     InternalPanel[Internal Dashboard] -->|HTTPS /api/v1| API
 ```
 
 ### Konfigurasi Koneksi
-Untuk proyek eksternal, gunakan konfigurasi berikut:
+Untuk proyek eksternal (bukan Web App utama, yang sudah same-origin), gunakan konfigurasi berikut:
 
-*   **API Base URL:** `https://api.kmp-adng.id/v1` (Production) atau `http://localhost:5000/api/v1` (Dev).
+*   **API Base URL:** `https://kmp-adng.id/api/v1` (Production, domain tunggal) atau `http://localhost:3000/api/v1` (Dev).
 *   **Database Connection String:** Gunakan string yang sama dengan `.env` di backend KMP-ADNG jika proyek tersebut adalah *service* internal yang butuh akses langsung (Direct DB Access).
 
 ---

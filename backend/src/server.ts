@@ -6,7 +6,7 @@ import { accounts } from './db/schema';
 
 dotenv.config();
 
-const PORT = 3000; // Hardcoded as per platform requirement
+const PORT = Number(process.env.PORT) || 3000; // PaaS platforms assign PORT dynamically
 
 console.log("Starting server initialization...");
 console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Defined" : "Undefined");

@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "postinstall": "npm --prefix backend install",
+    "build": "tsc && vite build && npm --prefix backend run build",
+    "start": "npm --prefix backend run start",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "check": "tsc --noEmit && npm --prefix backend run check",
+    "test": "npm --prefix backend run test",
     "preview": "vite preview"
   },
   "dependencies": {
