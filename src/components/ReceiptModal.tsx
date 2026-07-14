@@ -34,7 +34,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose
             {/* Receipt Body */}
             <div className="p-8 pt-6 space-y-6">
                 <div className="text-center">
-                    <img src={APP_LOGO} alt="Logo" className="h-8 mx-auto mb-2 opacity-50 grayscale" />
+                    <img src={APP_LOGO} alt="Logo" className="w-8 h-8 object-cover rounded-md mx-auto mb-2 opacity-50 grayscale" />
                     <p className="text-xs text-gray-400 uppercase tracking-widest">Bukti Transaksi Resmi</p>
                 </div>
 

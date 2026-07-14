@@ -2,7 +2,9 @@
 import { User, Product, Transaction, ChatContact, NewsItem, HelpTicket, Order, ChatMessage, ContentItem, SystemConfig, Campaign, Partner, AppNotification, MasterRegion, DbRegion, DbProvince, DbCity, DbDistrict, DbVillage, DbCoordinator, DbCounter } from './types';
 
 // GLOBAL ASSETS
-export const APP_LOGO = "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/fba7ced1-9ffb-4a18-80e5-5c1b4b90d37b-tizjYLMSctALX9I89ogUSs9Y1s2Pqr";
+// Logo resmi KMP-ADNG (emblem garuda putih di atas merah), disajikan dari
+// public/ oleh Vite/Express — tidak lagi bergantung ke hosting eksternal.
+export const APP_LOGO = "/logo.png";
 
 // DEFAULT SYSTEM CONFIGURATION
 export const DEFAULT_SYSTEM_CONFIG: SystemConfig = {

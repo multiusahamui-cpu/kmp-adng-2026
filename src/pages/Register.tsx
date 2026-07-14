@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { AppRoute } from '../types';
-import { UserPlus, ChevronRight, Loader2, ArrowLeft, Eye, EyeOff, ChevronLeft } from 'lucide-react';
+import { ChevronRight, Loader2, ArrowLeft, Eye, EyeOff, ChevronLeft } from 'lucide-react';
+import { APP_LOGO } from '../constants';
 import { useToast } from '../components/Toast';
 import { authService } from '../services/auth.service';
 import { NetworkStatus } from '../components/NetworkStatus';
@@ -99,7 +100,9 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate, onVerified }) =>
              {step === 'OTP' ? <ChevronLeft size={24} /> : <ArrowLeft size={24} />}
           </button>
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-          <UserPlus className="w-12 h-12 text-emerald-500 mx-auto mb-4 relative z-10" />
+          <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center p-2 relative z-10">
+            <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-cover rounded-full" />
+          </div>
           <h1 className="text-2xl font-bold text-white tracking-wide relative z-10">
             {step === 'FORM' ? 'Buat Akun Baru' : 'Verifikasi Email'}
           </h1>

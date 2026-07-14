@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside className={sidebarClasses}>
         <div className="flex items-center justify-between h-16 px-6 shrink-0 bg-slate-900 border-b border-slate-800">
           <div className="flex items-center">
-            <img src={APP_LOGO} alt="Logo" className="w-8 h-8 object-contain mr-2" />
+            <img src={APP_LOGO} alt="Logo" className="w-8 h-8 object-cover rounded-lg mr-2" />
             <div className="flex flex-col">
                 <span className="text-sm font-bold tracking-wider text-emerald-400">KMP-ADNG</span>
                 <span className="text-[9px] text-gray-500 uppercase tracking-tight">

@@ -40,7 +40,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin })
             <ArrowLeft size={24} />
           </button>
           <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center p-2">
-            <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-contain" />
+            <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-cover rounded-full" />
           </div>
           <h1 className="text-xl font-bold text-white">Lupa Password</h1>
           <p className="text-slate-400 text-xs mt-1">Kami akan kirim link reset ke email terdaftar Anda</p>

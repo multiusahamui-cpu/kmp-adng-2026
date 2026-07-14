@@ -107,7 +107,7 @@ const KTACard: React.FC<{
                      <img 
                        src={APP_LOGO}
                        alt="KMP-ADNG" 
-                       className={`h-12 w-auto object-contain ${!isLightCard ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'drop-shadow-md'}`}
+                       className={`h-12 w-12 object-cover rounded-xl ${!isLightCard ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'drop-shadow-md'}`}
                      />
                      <div className="flex flex-col pt-1">
                          <span className={`text-[10px] uppercase font-bold tracking-widest ${labelColor}`}>KTA DIGITAL</span>

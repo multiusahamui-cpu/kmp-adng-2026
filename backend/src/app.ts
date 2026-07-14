@@ -33,7 +33,6 @@ app.use(
           "'self'", 'data:', 'blob:',
           'https://imagedelivery.net',
           'https://*.tile.openstreetmap.org',
-          'https://usdozf7pplhxfvrl.public.blob.vercel-storage.com', // APP_LOGO (src/constants.ts)
           'https://images.unsplash.com',
           'https://picsum.photos',
           'https://ui-avatars.com',

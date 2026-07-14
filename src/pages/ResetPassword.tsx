@@ -55,7 +55,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ uid, token, onDone
       <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-700 z-10">
         <div className="p-8 text-center bg-slate-900">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center p-2">
-            <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-contain" />
+            <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-cover rounded-full" />
           </div>
           <h1 className="text-xl font-bold text-white">Atur Password Baru</h1>
         </div>

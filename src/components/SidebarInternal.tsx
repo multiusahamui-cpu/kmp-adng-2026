@@ -16,13 +16,13 @@ import {
   TrendingUp, 
   LogOut,
   ChevronRight,
-  ShieldAlert,
   Clock,
   Calculator,
   List,
   Settings
 } from 'lucide-react';
 import { AppRoute, SystemConfig } from '../types';
+import { APP_LOGO } from '../constants';
 
 interface SidebarInternalProps {
   currentRoute: AppRoute;
@@ -117,9 +117,7 @@ export const SidebarInternal: React.FC<SidebarInternalProps> = ({ currentRoute, 
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-6 shrink-0 bg-red-950 border-b border-red-900 shadow-sm">
           <div className="flex items-center">
-            <div className="bg-white/10 p-1.5 rounded-lg mr-3">
-                <ShieldAlert className="w-6 h-6 text-red-400" />
-            </div>
+            <img src={APP_LOGO} alt="KMP-ADNG" className="w-9 h-9 object-cover rounded-lg mr-3" />
             <div className="flex flex-col">
                 <span className="text-sm font-bold tracking-wider text-red-100">INTERNAL</span>
                 <span className="text-[9px] text-red-400 uppercase tracking-tight">{officialTitle || 'STAFF PORTAL'}</span>

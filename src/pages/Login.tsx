@@ -109,7 +109,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitch
               </button>
           )}
           <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center p-2">
-             <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-contain" />
+             <img src={APP_LOGO} alt="KMP-ADNG" className="w-full h-full object-cover rounded-full" />
           </div>
           <h1 className="text-xl font-bold text-emerald-500 tracking-wider">KMP-ADNG</h1>
           <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">Koperasi Multi Pihak - Aset Digital Nusantara Garuda</p>
