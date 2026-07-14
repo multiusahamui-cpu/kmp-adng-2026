@@ -341,7 +341,7 @@ export const Koperasi: React.FC<KoperasiProps> = ({ user, onNavigate }) => {
                       </div>
                       <h4 className="font-bold text-slate-800 mb-2">3. Koperasi Jasa (Pendukung)</h4>
                       <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                          Layanan Logistik, Angkutan, hingga pengurusan Sertifikasi (Halal/Indikasi Geografis) bagi produk adat.
+                          Layanan Logistik, Angkutan, hingga pengurusan Sertifikasi (Halal/Indikasi Geografis) bagi produk UMKM.
                       </p>
                       <button onClick={() => onNavigate && onNavigate(AppRoute.RIDE)} className="text-xs font-bold text-purple-600 flex items-center hover:underline">
                           Layanan Logistik <ArrowRight className="w-3 h-3 ml-1" />

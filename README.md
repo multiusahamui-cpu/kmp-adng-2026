@@ -1,9 +1,9 @@
 
 # KMP-ADNG V2.0 - Koperasi Multi Pihak - Aset Digital Nusantara Garuda
 
-![KMP-ADNG Logo](https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/fba7ced1-9ffb-4a18-80e5-5c1b4b90d37b-tizjYLMSctALX9I89ogUSs9Y1s2Pqr)
+![KMP-ADNG Logo](public/logo.png)
 
-**KMP-ADNG (Koperasi Multi Pihak - Aset Digital Nusantara Garuda)** adalah sebuah *Super App* yang bertujuan untuk mendigitalisasi operasional koperasi adat, meningkatkan inklusi keuangan, dan memberdayakan ekonomi anggota melalui ekosistem digital yang terintegrasi.
+**KMP-ADNG (Koperasi Multi Pihak - Aset Digital Nusantara Garuda)** adalah sebuah *Super App* yang bertujuan untuk mendigitalisasi operasional koperasi, meningkatkan inklusi keuangan, dan memberdayakan ekonomi anggota serta pelaku UMKM melalui ekosistem digital yang terintegrasi.
 
 Platform ini menggabungkan layanan keuangan (Simpan Pinjam, E-Wallet), perdagangan (Marketplace, PPOB, Pasar Grosir), logistik (K-Ride), dan manajemen organisasi (E-Voting, Komunitas) dalam satu atap.
 

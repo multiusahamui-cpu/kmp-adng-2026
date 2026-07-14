@@ -45,8 +45,8 @@ const MOCK_SESSIONS: VoteSession[] = [
                 id: 'c2',
                 name: 'Dr. Sarah Amalia',
                 photo: 'https://randomuser.me/api/portraits/women/44.jpg',
-                vision: 'Inovasi Teknologi untuk Ekonomi Adat.',
-                mission: ['Pemberdayaan pemuda adat', 'Beasiswa pendidikan untuk anak anggota', 'Pembangunan gudang logistik terpadu'],
+                vision: 'Inovasi Teknologi untuk Ekonomi UMKM.',
+                mission: ['Pemberdayaan wirausaha muda anggota', 'Beasiswa pendidikan untuk anak anggota', 'Pembangunan gudang logistik terpadu'],
                 votes: 620
             }
         ]

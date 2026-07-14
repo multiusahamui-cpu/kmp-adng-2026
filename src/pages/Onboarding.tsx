@@ -348,7 +348,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ user, onNavigate, onRefr
                       >
                         Piagam KMP-ADNG
                       </span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Saya tunduk pada AD/ART Koperasi Digital Masyarakat Adat.</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Saya tunduk pada AD/ART Koperasi Multi Pihak - Aset Digital Nusantara Garuda (KMP-ADNG).</p>
                   </div>
               </label>
           </div>

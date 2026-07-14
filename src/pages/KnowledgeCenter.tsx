@@ -69,10 +69,10 @@ export const KnowledgeCenter: React.FC<KnowledgeCenterProps> = ({ onNavigate }) 
                     <div className="animate-fade-in space-y-4">
                         <h2 className="text-2xl font-bold text-slate-800">1. Objektif & Visi KMP-ADNG</h2>
                         <p className="text-slate-600 leading-relaxed">
-                            KMP-ADNG (Koperasi Multi Pihak - Aset Digital Nusantara Garuda) dibangun dengan visi utama untuk <strong>mendekatkan kesejahteraan</strong> kepada masyarakat adat melalui transformasi digital.
+                            KMP-ADNG (Koperasi Multi Pihak - Aset Digital Nusantara Garuda) dibangun dengan visi utama untuk <strong>mendekatkan kesejahteraan</strong> kepada anggota dan pelaku UMKM melalui transformasi digital.
                         </p>
                         <ul className="list-disc pl-5 space-y-2 text-slate-600">
-                            <li><strong>Digitalisasi Ekonomi Adat:</strong> Mengubah pengelolaan sumber daya alam dan produk lokal dari konvensional menjadi digital yang terukur.</li>
+                            <li><strong>Digitalisasi Ekonomi UMKM:</strong> Mengubah pengelolaan usaha dan produk lokal dari konvensional menjadi digital yang terukur.</li>
                             <li><strong>Kedaulatan Data:</strong> Memastikan data anggota dan transaksi dikelola secara mandiri oleh koperasi, bukan pihak asing.</li>
                             <li><strong>Inklusi Keuangan:</strong> Memberikan akses layanan keuangan (simpanan, pembiayaan, pembayaran) kepada masyarakat yang belum terjangkau bank (unbankable).</li>
                             <li><strong>Efisiensi Rantai Pasok:</strong> Memotong jalur distribusi yang panjang melalui fitur Pasar Grosir B2B, menghubungkan petani langsung ke pembeli besar.</li>

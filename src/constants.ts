@@ -305,7 +305,7 @@ export const MOCK_USERS_DB: User[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Kain Tenun Tradisional', price: 750000, category: 'Kerajinan', image: 'https://picsum.photos/id/20/300/300', rating: 4.8, location: 'Toko Adat Jaya', isOfficial: false, sellerName: 'Ibu Ratna' },
+  { id: 'p1', name: 'Kain Tenun Tradisional', price: 750000, category: 'Kerajinan', image: 'https://picsum.photos/id/20/300/300', rating: 4.8, location: 'Toko Tenun Jaya', isOfficial: false, sellerName: 'Ibu Ratna' },
   { id: 'p2', name: 'Kopi Arabika Gayo', price: 85000, category: 'Makanan', image: 'https://picsum.photos/id/1060/300/300', rating: 4.9, location: 'KMP-ADNG Mart Aceh', isOfficial: true },
 ];
 

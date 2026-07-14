@@ -43,7 +43,7 @@ Data Anda digunakan untuk kepentingan operasional koperasi dan kenyamanan anggot
 2.  **Transaksi:** Memproses pembayaran, transfer, dan pesanan marketplace.
 3.  **Keamanan:** Mendeteksi login dari perangkat baru (OTP) dan mencegah akses ilegal.
 4.  **Komunikasi:** Mengirim notifikasi transaksi, berita koperasi, undangan RAT, dan informasi promo produk anggota.
-5.  **Pengembangan:** Menganalisis tren transaksi wilayah (secara anonim/agregat) untuk strategi pengembangan ekonomi adat.
+5.  **Pengembangan:** Menganalisis tren transaksi wilayah (secara anonim/agregat) untuk strategi pengembangan ekonomi UMKM anggota.
 
 ---
 
