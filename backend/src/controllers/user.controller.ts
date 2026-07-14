@@ -3,11 +3,12 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { db } from '../db';
 import { users, roleApplications, resignationRequests, kordinatorDetails, locations } from '../db/schema';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and, ne, sql } from 'drizzle-orm';
 import { successResponse, errorResponse } from '../utils/response';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { generateToken } from '../utils/jwt';
 
 const updateProfileSchema = z.object({
   name: z.string().optional(),
@@ -20,6 +21,12 @@ const updateProfileSchema = z.object({
 const setPinSchema = z.object({
   pin: z.string().length(6, "PIN harus 6 digit angka").regex(/^\d+$/, "PIN harus angka"),
   oldPin: z.string().optional(),
+});
+
+const bankAccountSchema = z.object({
+  bankName: z.string().min(1, "Nama bank wajib diisi"),
+  bankAccountNumber: z.string().min(1, "Nomor rekening wajib diisi"),
+  bankAccountHolder: z.string().min(1, "Nama pemilik rekening wajib diisi"),
 });
 
 const changePasswordSchema = z.object({
@@ -72,15 +79,14 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         exchangerDetails: users.exchangerDetails,
         mobileTraderDetails: users.mobileTraderDetails,
         marketingRoleDetails: users.marketingRoleDetails,
-        // Don't send PIN/Password hash
-        pinResetStatus: users.pin 
+        // Boolean check computed in SQL — the PIN hash itself never leaves the DB / enters this object.
+        hasPin: sql<boolean>`${users.pin} IS NOT NULL`,
     }).from(users).where(eq(users.id, req.user.id));
 
-    // Inject boolean for UI
     const safeUser = {
         ...user,
-        transactionPin: user.pinResetStatus ? 'SET' : undefined, 
-        pinResetStatus: undefined 
+        transactionPin: user.hasPin ? 'SET' : undefined,
+        hasPin: undefined,
     };
 
     return successResponse(res, safeUser, "Profil User");
@@ -100,6 +106,25 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     return successResponse(res, user, "Profil diperbarui");
   } catch (error: any) {
     return errorResponse(res, error.message || "Gagal update profil", 400);
+  }
+};
+
+export const updateBankAccount = async (req: AuthRequest, res: Response) => {
+  try {
+    const data = bankAccountSchema.parse(req.body);
+    const [user] = await db.update(users)
+        .set(data)
+        .where(eq(users.id, req.user.id))
+        .returning({
+          bankName: users.bankName,
+          bankAccountNumber: users.bankAccountNumber,
+          bankAccountHolder: users.bankAccountHolder,
+        });
+
+    return successResponse(res, user, "Rekening bank disimpan");
+  } catch (error: any) {
+    if (error.name === 'ZodError') return errorResponse(res, "Data rekening tidak valid", 400, error.errors);
+    return errorResponse(res, "Gagal simpan rekening bank", 500);
   }
 };
 
@@ -143,9 +168,18 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
         if(!isMatch) return errorResponse(res, "Password lama salah", 400);
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+        // Naikkan tokenVersion sekalian -- kalau password ini bocor & ada sesi
+        // lain yang memakainya, sesi itu langsung mati. Device yang barusan
+        // ganti password ini sendiri dapat token baru di response (di bawah)
+        // supaya tidak ikut ke-logout oleh aksinya sendiri.
+        const [updatedUser] = await db.update(users)
+          .set({ password: hashedPassword, tokenVersion: sql`${users.tokenVersion} + 1` })
+          .where(eq(users.id, userId))
+          .returning({ tokenVersion: users.tokenVersion });
 
-        return successResponse(res, null, "Password Berhasil Diubah");
+        const token = generateToken({ id: user.id, roles: user.roles || [], name: user.name, tv: updatedUser.tokenVersion });
+
+        return successResponse(res, { token }, "Password Berhasil Diubah");
     } catch (error: any) {
         if (error.name === 'ZodError') return errorResponse(res, "Format password salah", 400);
         return errorResponse(res, "Gagal ganti password", 500);
@@ -279,11 +313,16 @@ export const requestResignation = async (req: AuthRequest, res: Response) => {
             return errorResponse(res, "Alasan berhenti wajib diisi", 400);
         }
 
+        const [user] = await db.select({ bankAccountNumber: users.bankAccountNumber }).from(users).where(eq(users.id, userId));
+        if (!user?.bankAccountNumber) {
+            return errorResponse(res, "Isi rekening bank di menu Pengaturan dulu sebelum mengajukan berhenti -- dana ekuitas akan dikirim ke rekening tersebut.", 400);
+        }
+
         // Check if already requested
         const [existing] = await db.select().from(resignationRequests)
             .where(and(eq(resignationRequests.userId, userId), eq(resignationRequests.status, 'pending')))
             .limit(1);
-        
+
         if (existing) {
             return errorResponse(res, "Anda sudah memiliki permohonan berhenti yang sedang diproses.", 400);
         }
@@ -292,10 +331,12 @@ export const requestResignation = async (req: AuthRequest, res: Response) => {
             userId,
             reason,
             description,
-            status: 'pending'
+            status: 'pending',
+            caseType: 'self',
+            disbursementMethod: 'bank_transfer',
         });
 
-        return successResponse(res, null, "Permohonan berhenti berhasil dikirim. Menunggu persetujuan Admin.");
+        return successResponse(res, null, "Permohonan berhenti berhasil dikirim. Menunggu persetujuan General Manager.");
 
     } catch (error: any) {
         return errorResponse(res, error.message || "Gagal mengirim permohonan", 500);

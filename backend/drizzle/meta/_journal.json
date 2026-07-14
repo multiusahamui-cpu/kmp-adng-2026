@@ -29,6 +29,27 @@
       "when": 1772190034910,
       "tag": "0003_omniscient_dragon_lord",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1783801636092,
+      "tag": "0004_loose_komodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1783845277279,
+      "tag": "0005_faulty_speed_demon",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1783851026840,
+      "tag": "0006_flaky_gargoyle",
+      "breakpoints": true
     }
   ]
 }

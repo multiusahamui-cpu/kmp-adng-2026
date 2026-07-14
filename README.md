@@ -34,7 +34,7 @@ Dashboard khusus untuk pengelola koperasi:
 ## 🛠️ Tech Stack
 
 ### Frontend (Client)
-*   **Framework:** React 18 + Vite
+*   **Framework:** React 19 + Vite
 *   **Language:** TypeScript
 *   **Styling:** Tailwind CSS + Lucide Icons
 *   **State Management:** React Hooks
@@ -77,9 +77,14 @@ npm run dev
 
 **Konfigurasi `.env` Backend:**
 ```env
-PORT=5000
+PORT=3000
 DATABASE_URL="postgresql://user:pass@host:port/dbname?sslmode=require"
 JWT_SECRET="rahasia_negara_kmp_adng_v2"
+
+# Opsional -- daftar origin cross-origin yang diizinkan CORS, dipisah koma.
+# Kosongkan untuk pakai default (domain utama + landing page, lihat backend/src/app.ts).
+# Web App utama tidak butuh ini karena sudah same-origin (single-domain deploy).
+# CORS_ALLOWED_ORIGINS=https://landing.kmp-adng.id,https://partner-lain.id
 ```
 
 ### 2. Setup Frontend
@@ -91,14 +96,37 @@ npm install
 npm run dev
 ```
 
-Akses aplikasi di `http://localhost:5173`.
+Akses aplikasi di `http://localhost:5173` (Vite dev server, otomatis proxy `/api` ke backend di `localhost:3000`).
+
+### 3. Build & Jalankan Mode Production (Single Domain)
+Aplikasi ini adalah **monorepo single-domain**: hasil build frontend masuk ke `backend/public/dist`, lalu satu proses Express yang sama menyajikan frontend *dan* API (`/api/v1`) dari satu port/domain. Tidak perlu deploy dua tempat terpisah.
+
+```bash
+# Dari root folder proyek — satu rangkaian perintah untuk build & jalankan semuanya
+npm install     # install frontend + backend (lewat hook postinstall)
+npm run build   # build frontend (-> backend/public/dist) + compile backend TypeScript
+npm start       # jalankan satu proses Express (frontend + /api/v1)
+```
+
+Detail strategi deploy ke platform PaaS (Render/Railway/cPanel Node App, dsb) ada di [CICD.md](CICD.md).
+
+### 4. Quality Checks
+Perintah pengecekan kualitas kode sebelum commit/merge:
+
+```bash
+npm run lint    # ESLint
+npm run check   # Type-check frontend + backend (tsc --noEmit)
+npm run test    # Vitest (saat ini baru ada test di backend)
+```
 
 ---
 
 ## 🔐 Arsitektur Keamanan & Logic
 
-### 1. Centralized Backend
+### 1. Centralized Backend & Single-Domain Deploy
 Sistem menggunakan satu database terpusat (`users`, `wallets`, `transactions`) yang memungkinkan integrasi seamless antara Website Official, Web App Member, dan Internal Portal. Satu akun untuk semua platform.
+
+Web App (`/src`) dan Backend API (`/backend`) di-deploy sebagai **satu proses Node.js di satu domain** — bukan dua deployment terpisah seperti versi sebelumnya. Detail lengkapnya ada di [CICD.md](CICD.md) dan [CENTRALIZED_BACKEND.md](CENTRALIZED_BACKEND.md).
 
 ### 2. PIN Transaction Security
 *   **Server-Side Validation:** Validasi PIN transaksi **wajib** dilakukan di sisi server (`verifyPin` middleware). Frontend tidak boleh membandingkan PIN dengan local storage.
@@ -113,23 +141,30 @@ Sistem dirancang untuk mendeteksi login dari perangkat baru dan meminta verifika
 
 ```
 /
-├── backend/                # Backend API (Express + Drizzle)
+├── backend/                 # Backend API (Express + Drizzle) -- juga serve frontend saat production
 │   ├── src/
-│   │   ├── controllers/    # Logic Handler
-│   │   ├── db/             # Schema & Connection
-│   │   ├── middleware/     # Auth, Role, Upload
-│   │   └── routes/         # API Endpoints
-│   └── drizzle/            # Migration files
+│   │   ├── controllers/     # Logic Handler
+│   │   ├── db/              # Schema & Connection
+│   │   ├── middleware/      # Auth, Role, Upload
+│   │   ├── routes/          # API Endpoints
+│   │   ├── app.ts           # Serve API (/api/v1) + static frontend + SPA fallback
+│   │   └── **/*.test.ts     # Vitest unit tests
+│   ├── drizzle/             # Migration files
+│   ├── vitest.config.ts     # Konfigurasi Vitest (backend)
+│   └── public/dist/         # Hasil build frontend (auto-generated saat `npm run build`, jangan commit)
 │
-├── src/                    # Frontend (React)
-│   ├── components/         # Reusable UI (Sidebar, Navbar, Modal)
-│   ├── pages/              # Halaman Aplikasi
-│   │   ├── Admin...        # Halaman Internal
-│   │   ├── ...             # Halaman Member
-│   ├── services/           # API Calls (Axios)
-│   └── types.ts            # TypeScript Interfaces
+├── src/                     # Frontend (React)
+│   ├── components/          # Reusable UI (Sidebar, Navbar, Modal)
+│   ├── pages/                # Halaman Aplikasi
+│   │   ├── Admin...          # Halaman Internal
+│   │   ├── ...                # Halaman Member
+│   ├── services/             # API Calls (Axios)
+│   └── types.ts              # TypeScript Interfaces
+├── vite.config.ts           # build.outDir = backend/public/dist
 │
-└── reference.md            # Catatan Teknis & Architectural Decisions
+├── CICD.md                  # Strategi build & deploy (monorepo single-domain)
+├── CENTRALIZED_BACKEND.md   # Panduan integrasi eksternal ke backend
+└── reference.md             # Catatan Teknis & Architectural Decisions
 ```
 
 ---

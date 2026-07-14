@@ -4,7 +4,17 @@
       "Bash(git init *)",
       "Bash(git commit -m ' *)",
       "Bash(gh repo *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(npm audit *)",
+      "Bash(node -e ' *)",
+      "Bash(rm -f audit_tmp.json)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(echo \"BUILD_EXIT=$?\")",
+      "Read(//tmp/**)",
+      "Bash(cd \"d:/APP/kmp-adng-2026/backend\" && echo \"=== registerSchema ===\" && cat src/schemas/auth.schema.ts *)",
+      "Read(//d/APP/src/pages/**)",
+      "Bash(npx vitest *)"
     ]
   }
 }

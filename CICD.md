@@ -36,8 +36,9 @@ Pipeline ini berjalan setiap kali ada **Pull Request (PR)** atau **Push** ke bra
 1.  **Checkout Code**.
 2.  **Install Dependencies**: `npm install` di root — otomatis ikut install dependency backend lewat hook `postinstall` (`npm --prefix backend install`).
 3.  **Linting**: `npm run lint`.
-4.  **Type Checking**: `tsc --noEmit` (frontend) dan `cd backend && tsc --noEmit` (backend).
-5.  **Build Test**: `npm run build` — memastikan frontend *dan* backend sama-sama *compilable* dalam satu perintah.
+4.  **Type Checking**: `npm run check` — menjalankan `tsc --noEmit` di frontend *dan* backend dalam satu perintah. Frontend dan backend sama-sama 0 error type saat ini — kalau ada perubahan yang bikin `check` gagal, itu harus dibetulkan sebelum merge, bukan ditoleransi.
+5.  **Testing**: `npm run test` — menjalankan Vitest (saat ini baru tersedia di backend, `npm --prefix backend run test`).
+6.  **Build Test**: `npm run build` — memastikan frontend *dan* backend sama-sama *compilable* dalam satu perintah.
 
 **Contoh GitHub Actions (CI):**
 ```yaml
@@ -60,6 +61,10 @@ jobs:
         run: npm install
       - name: Lint
         run: npm run lint
+      - name: Type check
+        run: npm run check
+      - name: Test
+        run: npm run test
       - name: Build (frontend + backend)
         run: npm run build
 ```
@@ -138,14 +143,14 @@ Variabel yang wajib diisi di production:
 
 ---
 
-## 🧪 Strategi Testing (Future Roadmap)
+## 🧪 Strategi Testing
 
-Untuk fase selanjutnya, tambahkan tahap **Testing** sebelum build:
+**Unit Testing (sudah berjalan):** Backend pakai **Vitest** (`npm run test` dari root, atau `npm --prefix backend run test`). Baru ada satu contoh test (`backend/src/utils/jwt.test.ts`, round-trip sign/verify JWT) — tambahkan test baru di `backend/src/**/*.test.ts` seiring fitur baru, terutama untuk logika bisnis sensitif (validasi saldo, PIN, dsb). Frontend belum punya test; kalau nanti dibutuhkan, perlu setup tambahan (`jsdom` + `@testing-library/react`) di root.
 
-1.  **Unit Testing**: Menggunakan **Jest** atau **Vitest**.
-    *   Test fungsi logika bisnis (hitung pajak, validasi saldo).
-2.  **E2E Testing**: Menggunakan **Cypress** atau **Playwright**.
+**Future Roadmap:**
+1.  **E2E Testing**: Menggunakan **Cypress** atau **Playwright**.
     *   Simulasi user login, transaksi, dan checkout.
+2.  **Frontend Unit Testing**: Vitest + `@testing-library/react` untuk komponen React.
 
 ---
 
@@ -154,6 +159,8 @@ Untuk fase selanjutnya, tambahkan tahap **Testing** sebelum build:
 Sebelum melakukan merge ke `main`:
 - [ ] Versi aplikasi di `package.json` dinaikkan (Semantic Versioning).
 - [ ] Pastikan tidak ada *console.log* debugging yang tertinggal.
+- [ ] `npm run check` sukses (atau error yang muncul memang sudah diketahui/di-track).
+- [ ] `npm run test` sukses.
 - [ ] `npm run build` sukses dari root (frontend + backend).
 - [ ] Cek ulang environment variables di dashboard platform production.
 - [ ] Backup database sebelum migrasi skema besar (`npm --prefix backend run db:push`).

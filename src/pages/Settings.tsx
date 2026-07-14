@@ -126,6 +126,11 @@ export const Settings: React.FC<SettingsProps> = ({
   const [resignReason, setResignReason] = useState("");
   const [resignDescription, setResignDescription] = useState("");
 
+  // --- BANK ACCOUNT STATE (tujuan pencairan dana ekuitas saat resign) ---
+  const [bankName, setBankName] = useState(user.bankName || "");
+  const [bankAccountNumber, setBankAccountNumber] = useState(user.bankAccountNumber || "");
+  const [bankAccountHolder, setBankAccountHolder] = useState(user.bankAccountHolder || "");
+
   // --- SMART INIT ---
   useEffect(() => {
     // Fetch Regions on mount
@@ -432,8 +437,33 @@ export const Settings: React.FC<SettingsProps> = ({
     }
   };
 
+  const handleSaveBankAccount = async () => {
+    if (!bankName || !bankAccountNumber || !bankAccountHolder) {
+      return showToast("Lengkapi semua field rekening bank", "error");
+    }
+    setIsLoading(true);
+    try {
+      await userService.updateBankAccount(bankName, bankAccountNumber, bankAccountHolder);
+      onUpdateUser({ bankName, bankAccountNumber, bankAccountHolder });
+      showToast("Rekening bank berhasil disimpan", "success");
+    } catch (error: any) {
+      showToast(
+        error.response?.data?.message || "Gagal simpan rekening bank",
+        "error",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleResign = async () => {
     if (!resignReason) return showToast("Pilih alasan berhenti", "error");
+    if (!bankAccountNumber) {
+      return showToast(
+        "Lengkapi rekening bank Anda dulu sebelum mengajukan berhenti (lihat di atas).",
+        "error",
+      );
+    }
     if (
       !window.confirm(
         "Apakah Anda yakin ingin mengajukan permohonan berhenti? Tindakan ini tidak dapat dibatalkan.",
@@ -445,7 +475,7 @@ export const Settings: React.FC<SettingsProps> = ({
     try {
       await userService.requestResignation(resignReason, resignDescription);
       showToast(
-        "Permohonan berhenti berhasil dikirim. Menunggu persetujuan Admin.",
+        "Permohonan berhenti berhasil dikirim. Menunggu persetujuan General Manager.",
         "success",
       );
       setShowResignModal(false);
@@ -1309,14 +1339,72 @@ export const Settings: React.FC<SettingsProps> = ({
                 Status Keanggotaan
               </h3>
 
+              {/* --- BANK ACCOUNT SECTION --- */}
+              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-6">
+                <h4 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2" /> Rekening Bank
+                </h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Wajib diisi sebelum mengajukan berhenti -- dana ekuitas Anda
+                  akan dikirim ke rekening ini.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nama Bank
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white"
+                      placeholder="mis. BCA, BRI, Mandiri"
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nomor Rekening
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white"
+                      placeholder="1234567890"
+                      value={bankAccountNumber}
+                      onChange={(e) => setBankAccountNumber(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nama Pemilik Rekening
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white"
+                      placeholder="Sesuai buku tabungan"
+                      value={bankAccountHolder}
+                      onChange={(e) => setBankAccountHolder(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleSaveBankAccount}
+                  disabled={isLoading}
+                  className="mt-4 bg-slate-800 dark:bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:opacity-90 flex items-center disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4 mr-2" />{" "}
+                  {isLoading ? "Menyimpan..." : "Simpan Rekening"}
+                </button>
+              </div>
+
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
                 <h4 className="font-bold text-red-800 dark:text-red-400 mb-2 flex items-center">
                   <AlertTriangle className="w-5 h-5 mr-2" /> Zona Bahaya
                 </h4>
                 <p className="text-sm text-red-700 dark:text-red-300 mb-4">
                   Mengajukan permohonan berhenti akan menonaktifkan akun Anda
-                  secara permanen setelah disetujui Admin. Seluruh simpanan
-                  (Equity) akan dicairkan ke dompet Anda sebelum akun ditutup.
+                  secara permanen setelah disetujui General Manager. Seluruh
+                  dana ekuitas (simpanan + saldo dompet) akan dikirim ke
+                  rekening bank yang Anda daftarkan di atas.
                 </p>
                 <button
                   onClick={() => setShowResignModal(true)}

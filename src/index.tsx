@@ -6,6 +6,8 @@ import AppInternal from './AppInternal'; // Internal App
 import { Login } from './pages/Login';
 import { LoginInternal } from './pages/LoginInternal';
 import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { ToastProvider } from './components/Toast';
 import { User, SystemConfig } from './types';
 import { DEFAULT_SYSTEM_CONFIG } from './constants';
@@ -25,8 +27,20 @@ const RootApp: React.FC = () => {
     // Config State
     const [systemConfig, setSystemConfig] = useState<SystemConfig>(() => loadData(STORAGE_KEYS.SYSTEM_CONFIG, DEFAULT_SYSTEM_CONFIG));
     
+    // Dari link email reset password (?uid=...&token=...) -- app ini tidak
+    // pakai URL routing sama sekali, jadi ini satu-satunya tempat yang baca
+    // window.location, khusus untuk entry point dari luar app (email).
+    const [resetPasswordParams] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        const uid = params.get('uid');
+        const token = params.get('token');
+        return uid && token ? { uid, token } : null;
+    });
+
     // UI State
-    const [publicRoute, setPublicRoute] = useState<'login' | 'register'>('login');
+    const [publicRoute, setPublicRoute] = useState<'login' | 'register' | 'forgot-password' | 'reset-password'>(
+        resetPasswordParams ? 'reset-password' : 'login'
+    );
     const [isInitializing, setIsInitializing] = useState(true);
     const [initError, setInitError] = useState<string | null>(null);
     
@@ -179,13 +193,32 @@ const RootApp: React.FC = () => {
         }
 
         // --- PUBLIC STATE ---
+        if (publicRoute === 'reset-password' && resetPasswordParams) {
+            return (
+                <ResetPassword
+                    uid={resetPasswordParams.uid}
+                    token={resetPasswordParams.token}
+                    onDone={() => {
+                        // Bersihkan ?uid=&token= dari URL supaya refresh tidak
+                        // balik ke halaman ini dengan token yang sudah dipakai.
+                        window.history.replaceState({}, '', window.location.pathname);
+                        setPublicRoute('login');
+                    }}
+                />
+            );
+        }
+
+        if (publicRoute === 'forgot-password') {
+            return <ForgotPassword onBackToLogin={() => setPublicRoute('login')} />;
+        }
+
         if (publicRoute === 'register') {
-            return <Register onNavigate={() => setPublicRoute('login')} onRegister={() => {}} />;
+            return <Register onNavigate={() => setPublicRoute('login')} onRegister={() => {}} onVerified={handleLoginSuccess} />;
         }
 
         if (isInternalMode) {
             return (
-                <LoginInternal 
+                <LoginInternal
                     onLogin={handleLoginSuccess}
                     onBackToMember={() => setIsInternalMode(false)}
                 />
@@ -193,11 +226,12 @@ const RootApp: React.FC = () => {
         }
 
         return (
-            <Login 
+            <Login
                 onLogin={handleLoginSuccess}
                 onRegisterClick={() => setPublicRoute('register')}
+                onForgotPasswordClick={() => setPublicRoute('forgot-password')}
                 onSwitchToInternal={() => setIsInternalMode(true)}
-                logoutReason={logoutReason} 
+                logoutReason={logoutReason}
             />
         );
     };

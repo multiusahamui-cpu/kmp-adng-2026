@@ -67,6 +67,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // --- CONFIG STATE ---
   const [localSysConfig, setLocalSysConfig] = useState<SystemConfig>(systemConfig);
 
+  // --- HEIR RESIGNATION (Penutupan Akun Ahli Waris) STATE ---
+  const [heirModalUser, setHeirModalUser] = useState<User | null>(null);
+  const [heirReason, setHeirReason] = useState('');
+  const [heirDescription, setHeirDescription] = useState('');
+  const [heirMethod, setHeirMethod] = useState<'bank_transfer' | 'cash_pickup'>('bank_transfer');
+
   // --- FETCH DATA ON VIEW CHANGE ---
   useEffect(() => {
       if (view === 'members') fetchMembers();
@@ -108,6 +114,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           fetchApprovals(); // Refresh list
       } catch (error: any) {
           showToast(error.response?.data?.message || "Gagal memproses", "error");
+      }
+  };
+
+  const handleCreateHeirResignation = async () => {
+      if (!heirModalUser) return;
+      if (!heirReason) return showToast("Isi alasan/ringkasan email ahli waris", "error");
+      if (!window.confirm(`Yakin ajukan penutupan akun untuk ${heirModalUser.name} atas nama ahli waris? Ini akan diteruskan ke General Manager untuk persetujuan.`)) return;
+
+      setIsLoading(true);
+      try {
+          await api.post('/admin/resignation/heir', {
+              userId: heirModalUser.id,
+              reason: heirReason,
+              description: heirDescription,
+              disbursementMethod: heirMethod,
+          });
+          showToast("Pengajuan berhasil dibuat. Menunggu persetujuan GM.", "success");
+          setHeirModalUser(null);
+          setHeirReason('');
+          setHeirDescription('');
+          setHeirMethod('bank_transfer');
+      } catch (error: any) {
+          showToast(error.response?.data?.message || "Gagal membuat pengajuan", "error");
+      } finally {
+          setIsLoading(false);
       }
   };
 
@@ -292,12 +323,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                           >
                                               <Lock className="w-4 h-4" />
                                           </button>
-                                          <button 
+                                          <button
                                             title="Blokir User"
                                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
                                           >
                                               <UserPlus className="w-4 h-4 rotate-45" /> {/* Use generic icon for block/ban */}
                                           </button>
+                                          {user.status !== 'closed' && (
+                                              <button
+                                                title="Ajukan Penutupan Akun (Ahli Waris)"
+                                                onClick={() => setHeirModalUser(user)}
+                                                className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                                              >
+                                                  <FileLock className="w-4 h-4" />
+                                              </button>
+                                          )}
                                       </div>
                                   </td>
                               </tr>
@@ -306,6 +346,69 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </table>
               </div>
           </div>
+
+          {/* --- HEIR RESIGNATION MODAL --- */}
+          {heirModalUser && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                      <div className="bg-slate-800 p-4 text-white">
+                          <h3 className="font-bold">Penutupan Akun (Ahli Waris)</h3>
+                          <p className="text-xs text-slate-300">{heirModalUser.name} -- {heirModalUser.phone}</p>
+                      </div>
+                      <div className="p-6 space-y-4">
+                          <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                              Dibuat berdasarkan email dari ahli waris tercatat di sistem ke support@kmp-adng.id.
+                              Pengajuan ini akan diteruskan ke General Manager untuk persetujuan.
+                          </p>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Alasan / Ringkasan Email Ahli Waris</label>
+                              <textarea
+                                  className="w-full p-3 border border-gray-300 rounded-xl"
+                                  rows={2}
+                                  value={heirReason}
+                                  onChange={(e) => setHeirReason(e.target.value)}
+                                  placeholder="mis. Anggota meninggal dunia, ahli waris a/n ..."
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Catatan Tambahan (opsional)</label>
+                              <textarea
+                                  className="w-full p-3 border border-gray-300 rounded-xl"
+                                  rows={2}
+                                  value={heirDescription}
+                                  onChange={(e) => setHeirDescription(e.target.value)}
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Metode Pencairan</label>
+                              <select
+                                  className="w-full p-3 border border-gray-300 rounded-xl"
+                                  value={heirMethod}
+                                  onChange={(e) => setHeirMethod(e.target.value as 'bank_transfer' | 'cash_pickup')}
+                              >
+                                  <option value="bank_transfer">Transfer ke Rekening Bank Terdaftar</option>
+                                  <option value="cash_pickup">Tunai di Kasir (Ahli waris datang langsung + KTP/KK almarhum)</option>
+                              </select>
+                          </div>
+                          <div className="pt-2 flex gap-3">
+                              <button
+                                onClick={() => setHeirModalUser(null)}
+                                className="flex-1 py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50"
+                              >
+                                  Batal
+                              </button>
+                              <button
+                                onClick={handleCreateHeirResignation}
+                                disabled={isLoading}
+                                className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 disabled:opacity-70"
+                              >
+                                  {isLoading ? "Mengirim..." : "Kirim ke GM"}
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
       </div>
   );
 

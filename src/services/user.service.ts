@@ -15,6 +15,12 @@ export const userService = {
 
     changePassword: async (oldPassword: string, newPassword: string) => {
         const response = await api.put('/users/password', { oldPassword, newPassword });
+        // Backend menaikkan tokenVersion saat ganti password (supaya sesi lain
+        // yang mungkin sudah dicuri ikut ter-invalidate) dan mengirim token baru
+        // khusus untuk device ini -- tanpa ini, token lama di localStorage jadi
+        // tidak valid lagi di request berikutnya.
+        const newToken = response.data.data?.token;
+        if (newToken) localStorage.setItem('token', newToken);
         return response.data.data;
     },
 
@@ -31,5 +37,10 @@ export const userService = {
     requestResignation: async (reason: string, description: string) => {
         const response = await api.post('/users/resignation', { reason, description });
         return response.data;
+    },
+
+    updateBankAccount: async (bankName: string, bankAccountNumber: string, bankAccountHolder: string) => {
+        const response = await api.put('/users/bank-account', { bankName, bankAccountNumber, bankAccountHolder });
+        return response.data.data;
     }
 };

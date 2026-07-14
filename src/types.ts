@@ -202,7 +202,7 @@ export interface User {
     | 'super_admin' | 'admin' | 'management' | 'pengurus'
     | 'cashier' | 'accountant' | 'general_manager' | 'internal_audit' | 'warehouse_head' | 'expedition' | 'account_officer'
   )[];
-  status: 'active' | 'pending' | 'awaiting_payment'; // Added awaiting_payment
+  status: 'active' | 'pending' | 'awaiting_payment' | 'suspended' | 'rejected' | 'inactive' | 'closed';
   joinDate?: string;
   avatarUrl: string;
   balance: number;
@@ -227,7 +227,10 @@ export interface User {
   postalCode?: string;
   ktpPhoto?: string;
   selfiePhoto?: string;
-  
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankAccountHolder?: string;
+
   officialTitle?: string; 
   roleTitles?: Partial<Record<string, string>>;
   transactionPin?: string; 

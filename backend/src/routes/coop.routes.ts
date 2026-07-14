@@ -1,16 +1,16 @@
 
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { getShuInfo, simulateLoan, applyLoan, getActiveLoans, getCoopStats } from '../controllers/coop.controller';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate as RequestHandler);
 
-router.get('/stats', getCoopStats);
-router.get('/shu', getShuInfo);
-router.post('/loans/simulate', simulateLoan); // Public enough? maybe protected is better.
-router.post('/loans/apply', applyLoan);
-router.get('/loans/active', getActiveLoans);
+router.get('/stats', getCoopStats as RequestHandler);
+router.get('/shu', getShuInfo as RequestHandler);
+router.post('/loans/simulate', simulateLoan as RequestHandler); // Public enough? maybe protected is better.
+router.post('/loans/apply', applyLoan as RequestHandler);
+router.get('/loans/active', getActiveLoans as RequestHandler);
 
 export default router;

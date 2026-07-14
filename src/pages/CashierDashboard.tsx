@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Product } from '../types';
-import { 
-    Search, 
-    ShoppingCart, 
-    Trash2, 
-    Printer, 
-    Plus, 
+import {
+    Search,
+    ShoppingCart,
+    Trash2,
+    Printer,
+    Plus,
     Minus,
     Package,
     ArrowUpRight,
@@ -15,10 +15,13 @@ import {
     Activity,
     CheckCircle,
     Clock,
-    AlertCircle
+    AlertCircle,
+    UserX,
+    X
 } from 'lucide-react';
 import { MOCK_PRODUCTS } from '../constants';
 import { useToast } from '../components/Toast';
+import api from '../services/api';
 
 interface CashierDashboardProps {
   user: User;
@@ -39,6 +42,41 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, view =
   const [receivedAmount, setReceivedAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const { showToast } = useToast();
+
+  // --- PENCAIRAN TUTUP AHLI WARIS (real API) ---
+  const [heirQueue, setHeirQueue] = useState<any[]>([]);
+  const [isLoadingHeirQueue, setIsLoadingHeirQueue] = useState(false);
+  const [heirToExecute, setHeirToExecute] = useState<any>(null);
+  const [isExecutingHeir, setIsExecutingHeir] = useState(false);
+
+  const fetchHeirQueue = async () => {
+      setIsLoadingHeirQueue(true);
+      try {
+          const res = await api.get('/admin/resignations/cashier-queue');
+          setHeirQueue(res.data.data);
+      } catch (error) {
+          console.error("Failed fetch heir closure queue", error);
+      } finally {
+          setIsLoadingHeirQueue(false);
+      }
+  };
+
+  useEffect(() => { fetchHeirQueue(); }, []);
+
+  const handleExecuteHeirClosure = async () => {
+      if (!heirToExecute) return;
+      setIsExecutingHeir(true);
+      try {
+          const res = await api.post(`/admin/resignations/${heirToExecute.id}/execute-cash`);
+          showToast(res.data.message, "success");
+          setHeirToExecute(null);
+          fetchHeirQueue();
+      } catch (error: any) {
+          showToast(error.response?.data?.message || "Gagal eksekusi pencairan", "error");
+      } finally {
+          setIsExecutingHeir(false);
+      }
+  };
 
   // Cash Management State
   const [requests, setRequests] = useState(MOCK_PAYMENT_REQUESTS);
@@ -99,6 +137,75 @@ export const CashierDashboard: React.FC<CashierDashboardProps> = ({ user, view =
                   </div>
               </div>
           </div>
+
+          {/* --- PENCAIRAN TUTUP AHLI WARIS --- */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-8">
+              <h3 className="font-bold text-lg text-slate-800 mb-1 flex items-center">
+                  <UserX className="w-5 h-5 mr-2 text-red-500" /> PENCAIRAN TUTUP AHLI WARIS
+              </h3>
+              <p className="text-xs text-gray-500 mb-4">
+                  Permohonan penutupan akun (ahli waris) yang sudah disetujui GM, metode tunai. Pastikan ahli waris membawa KTP &amp; KK almarhum/almarhumah sebelum eksekusi.
+              </p>
+              {isLoadingHeirQueue ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">Memuat...</div>
+              ) : heirQueue.length === 0 ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">
+                      <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      Tidak ada antrian pencairan tunai ahli waris.
+                  </div>
+              ) : (
+                  <div className="space-y-3">
+                      {heirQueue.map((r) => (
+                          <div key={r.id} className="flex flex-col md:flex-row justify-between items-center bg-red-50 border border-red-100 rounded-xl p-4">
+                              <div>
+                                  <p className="font-bold text-slate-800">{r.userName}</p>
+                                  <p className="text-xs text-gray-500">{r.userPhone} -- {r.reason}</p>
+                                  <p className="text-xs text-gray-400">Disetujui GM: {r.approvedAt ? new Date(r.approvedAt).toLocaleDateString('id-ID') : '-'}</p>
+                              </div>
+                              <button
+                                onClick={() => setHeirToExecute(r)}
+                                className="mt-3 md:mt-0 px-5 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 shadow-md"
+                              >
+                                  Eksekusi Pencairan
+                              </button>
+                          </div>
+                      ))}
+                  </div>
+              )}
+          </div>
+
+          {/* --- CONFIRM EXECUTE MODAL --- */}
+          {heirToExecute && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                      <div className="bg-red-600 p-4 text-white flex justify-between items-center">
+                          <h3 className="font-bold">Konfirmasi Pencairan Tunai</h3>
+                          <button onClick={() => setHeirToExecute(null)} className="text-white/80 hover:text-white"><X className="w-5 h-5" /></button>
+                      </div>
+                      <div className="p-6 space-y-4">
+                          <p className="text-sm text-gray-700">
+                              Pastikan ahli waris <strong>{heirToExecute.userName}</strong> sudah menunjukkan KTP &amp; KK almarhum/almarhumah secara fisik.
+                              Setelah dikonfirmasi, seluruh ekuitas + saldo dompet anggota akan dijurnal nol dan akun ditutup permanen -- tindakan ini tidak bisa dibatalkan.
+                          </p>
+                          <div className="flex gap-3">
+                              <button
+                                onClick={() => setHeirToExecute(null)}
+                                className="flex-1 py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50"
+                              >
+                                  Batal
+                              </button>
+                              <button
+                                onClick={handleExecuteHeirClosure}
+                                disabled={isExecutingHeir}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg disabled:opacity-70"
+                              >
+                                  {isExecutingHeir ? "Memproses..." : "Ya, Cairkan & Tutup Akun"}
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
       </div>
   );
 

@@ -82,12 +82,24 @@ export const users = pgTable("users", {
   heir: varchar("heir", { length: 255 }), // Ahli Waris
   joinDate: timestamp("join_date"),
 
+  // Rekening bank -- diisi anggota sendiri di Settings. Dipakai sebagai
+  // tujuan pencairan dana ekuitas saat penutupan akun (resign/ahli waris).
+  bankName: varchar("bank_name", { length: 100 }),
+  bankAccountNumber: varchar("bank_account_number", { length: 50 }),
+  bankAccountHolder: varchar("bank_account_holder", { length: 255 }),
+
   // KYC STATUS FLAGS
   kycVerified: boolean("kyc_verified").default(false),
   kycDataSubmitted: boolean("kyc_data_submitted").default(false),
 
   // Security & OTP Tracking
   otpAttempts: integer("otp_attempts").default(0),
+
+  // Dinaikkan setiap logout / ganti password / ganti PIN. Nilainya ikut
+  // ditandatangani di JWT (claim `tv`) -- authenticate middleware menolak
+  // token yang tokenVersion-nya tidak cocok lagi dengan ini, jadi "logout"
+  // sungguhan membatalkan token, bukan cuma menghapus localStorage di client.
+  tokenVersion: integer("token_version").notNull().default(0),
 
   // Referral Tracking
   referredBy: varchar("referred_by", { length: 50 }), // Kode referral yang digunakan saat daftar
@@ -127,6 +139,22 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// OTP / token sekali-pakai lewat email: verifikasi registrasi, verifikasi KYC,
+// dan reset password. Satu tabel untuk semua, dibedakan lewat `purpose`.
+// `codeHash` di-bcrypt (sama seperti password/PIN) -- baik kode 6 digit
+// (diketik manual) maupun token reset (di link email) disimpan dengan cara sama.
+export const otpCodes = pgTable("otp_codes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  purpose: varchar("purpose", { length: 30 }).notNull(), // 'registration' | 'kyc_verification' | 'password_reset'
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // NEW TABLE: RESIGNATION REQUESTS (Permohonan Berhenti)
 export const resignationRequests = pgTable("resignation_requests", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -135,12 +163,23 @@ export const resignationRequests = pgTable("resignation_requests", {
     .notNull(),
   reason: text("reason").notNull(),
   description: text("description"),
-  status: varchar("status", { length: 20 }).default("pending"), // pending, approved, rejected
+  // pending -> approved | rejected (keputusan GM).
+  // Kalau approved & disbursementMethod = cash_pickup: approved -> awaiting_cashier -> closed.
+  // Kalau approved & disbursementMethod = bank_transfer: berhenti di approved (transfer &
+  // penutupan akun dilakukan manual di luar sistem untuk saat ini).
+  status: varchar("status", { length: 20 }).default("pending"),
+  // 'self' = anggota masih hidup, ajukan sendiri. 'heir_death' = diajukan Admin atas nama
+  // anggota yang meninggal, berdasarkan email dari ahli waris tercatat di sistem.
+  caseType: varchar("case_type", { length: 20 }).default("self").notNull(),
+  // 'bank_transfer' | 'cash_pickup' (cash_pickup cuma valid untuk caseType heir_death).
+  disbursementMethod: varchar("disbursement_method", { length: 20 }).default("bank_transfer"),
   adminNotes: text("admin_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  approvedAt: timestamp("approved_at"),
-  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"), // Timestamp keputusan GM (approve/reject)
+  approvedBy: uuid("approved_by").references(() => users.id), // GM yang memutuskan
+  closedAt: timestamp("closed_at"), // Timestamp eksekusi cashier (cash_pickup)
+  closedBy: uuid("closed_by").references(() => users.id), // Cashier yang eksekusi
 });
 
 // NEW TABLE: BLACKLIST REGISTRATIONS (Audit Trail)

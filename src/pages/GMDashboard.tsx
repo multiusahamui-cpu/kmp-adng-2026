@@ -1,24 +1,26 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { 
-    LayoutDashboard, 
-    ShieldCheck, 
-    TrendingUp, 
-    Activity, 
-    Users, 
-    CheckCircle, 
-    Clock, 
-    FileText, 
-    Banknote, 
-    MapPin, 
+import {
+    LayoutDashboard,
+    ShieldCheck,
+    TrendingUp,
+    Activity,
+    Users,
+    CheckCircle,
+    Clock,
+    FileText,
+    Banknote,
+    MapPin,
     Briefcase,
     X,
     Eye,
     AlertCircle,
-    Info
+    Info,
+    UserX
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import api from '../services/api';
 import { 
     BarChart, 
     Bar, 
@@ -53,7 +55,7 @@ const PERFORMANCE_DATA = [
 export const GMDashboard: React.FC<GMDashboardProps> = ({ view }) => {
   const { showToast } = useToast();
   const [approvals, setApprovals] = useState(MOCK_APPROVALS);
-  
+
   // NEW: State for Modal Review
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
 
@@ -67,6 +69,46 @@ export const GMDashboard: React.FC<GMDashboardProps> = ({ view }) => {
       setApprovals(prev => prev.filter(item => item.id !== id));
       showToast("Permintaan Ditolak.", "info");
       setSelectedRequest(null);
+  };
+
+  // --- RESIGNATION APPROVALS (real API, terpisah dari mock payment/loan di atas) ---
+  const [resignations, setResignations] = useState<any[]>([]);
+  const [isLoadingResignations, setIsLoadingResignations] = useState(false);
+  const [selectedResignation, setSelectedResignation] = useState<any>(null);
+  const [resignDecisionNotes, setResignDecisionNotes] = useState('');
+
+  const fetchResignations = async () => {
+      setIsLoadingResignations(true);
+      try {
+          const res = await api.get('/admin/resignations');
+          setResignations(res.data.data);
+      } catch (error) {
+          console.error("Failed fetch resignations", error);
+      } finally {
+          setIsLoadingResignations(false);
+      }
+  };
+
+  useEffect(() => {
+      if (view === 'approvals') fetchResignations();
+  }, [view]);
+
+  const handleDecideResignation = async (decision: 'approve' | 'reject') => {
+      if (!selectedResignation) return;
+      if (!window.confirm(`Yakin ${decision === 'approve' ? 'MENYETUJUI' : 'MENOLAK'} permohonan berhenti ${selectedResignation.userName}?`)) return;
+
+      try {
+          const res = await api.put(`/admin/resignations/${selectedResignation.id}/decide`, {
+              decision,
+              notes: resignDecisionNotes,
+          });
+          showToast(res.data.message, "success");
+          setSelectedResignation(null);
+          setResignDecisionNotes('');
+          fetchResignations();
+      } catch (error: any) {
+          showToast(error.response?.data?.message || "Gagal memproses keputusan", "error");
+      }
   };
 
   const handlePostpone = () => {
@@ -152,7 +194,116 @@ export const GMDashboard: React.FC<GMDashboardProps> = ({ view }) => {
   const renderApprovals = () => (
       <div className="animate-fade-in">
           {renderHeader("Pusat Persetujuan", "Verifikasi Pembayaran & Pembiayaan", <ShieldCheck className="w-8 h-8 text-blue-400" />)}
-          
+
+          {/* --- RESIGNATION APPROVALS (Permohonan Berhenti / Ahli Waris) --- */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800 flex items-center">
+                      <UserX className="w-5 h-5 mr-2 text-red-500" /> Permohonan Berhenti Anggota ({resignations.length})
+                  </h3>
+              </div>
+              <div className="divide-y divide-gray-100">
+                  {isLoadingResignations ? (
+                      <div className="p-8 text-center text-gray-400">Memuat...</div>
+                  ) : resignations.length === 0 ? (
+                      <div className="p-8 text-center text-gray-400">
+                          <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                          <p>Tidak ada permohonan berhenti yang menunggu.</p>
+                      </div>
+                  ) : (
+                      resignations.map((r) => (
+                          <div key={r.id} className="p-6 flex flex-col md:flex-row justify-between items-center hover:bg-gray-50 transition">
+                              <div className="mb-4 md:mb-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-slate-800">{r.userName}</span>
+                                      <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${r.caseType === 'heir_death' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                          {r.caseType === 'heir_death' ? 'Ahli Waris' : 'Self Resign'}
+                                      </span>
+                                      <span className="text-xs px-2 py-0.5 rounded uppercase font-bold bg-gray-100 text-gray-600">
+                                          {r.disbursementMethod === 'cash_pickup' ? 'Tunai (Kasir)' : 'Transfer Bank'}
+                                      </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600">{r.reason}</p>
+                                  <p className="text-xs text-gray-400 mt-1">{r.userPhone} -- {new Date(r.createdAt).toLocaleDateString('id-ID')}</p>
+                              </div>
+                              <button
+                                onClick={() => setSelectedResignation(r)}
+                                className="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-900 shadow-md flex items-center"
+                              >
+                                  <Eye className="w-4 h-4 mr-2" /> Review
+                              </button>
+                          </div>
+                      ))
+                  )}
+              </div>
+          </div>
+
+          {/* --- RESIGNATION REVIEW MODAL --- */}
+          {selectedResignation && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                      <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
+                          <div>
+                              <h3 className="text-xl font-bold">Permohonan Berhenti</h3>
+                              <p className="text-slate-400 text-sm">{selectedResignation.userName} -- {selectedResignation.userPhone}</p>
+                          </div>
+                          <button onClick={() => setSelectedResignation(null)} className="hover:text-red-400 transition"><X size={24} /></button>
+                      </div>
+                      <div className="p-6 space-y-4">
+                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2 text-sm">
+                              <p><span className="text-gray-500">Tipe:</span> <strong>{selectedResignation.caseType === 'heir_death' ? 'Ahli Waris (Anggota Meninggal)' : 'Self Resign'}</strong></p>
+                              <p><span className="text-gray-500">Metode Pencairan:</span> <strong>{selectedResignation.disbursementMethod === 'cash_pickup' ? 'Tunai di Kasir' : 'Transfer Bank'}</strong></p>
+                              <p><span className="text-gray-500">Alasan:</span> {selectedResignation.reason}</p>
+                              {selectedResignation.description && <p><span className="text-gray-500">Catatan:</span> {selectedResignation.description}</p>}
+                              {selectedResignation.disbursementMethod === 'bank_transfer' && (
+                                  <div className="pt-2 border-t border-gray-200">
+                                      <p className="text-gray-500 mb-1">Rekening Tujuan:</p>
+                                      {selectedResignation.bankAccountNumber ? (
+                                          <p className="font-mono">{selectedResignation.bankName} -- {selectedResignation.bankAccountNumber} a/n {selectedResignation.bankAccountHolder}</p>
+                                      ) : (
+                                          <p className="text-red-600 font-bold">Anggota belum mengisi rekening bank!</p>
+                                      )}
+                                  </div>
+                              )}
+                          </div>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Catatan Keputusan (opsional)</label>
+                              <textarea
+                                  className="w-full p-3 border border-gray-300 rounded-xl"
+                                  rows={2}
+                                  value={resignDecisionNotes}
+                                  onChange={(e) => setResignDecisionNotes(e.target.value)}
+                              />
+                          </div>
+                          {selectedResignation.disbursementMethod === 'cash_pickup' && (
+                              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                  Kalau disetujui, permohonan ini masuk antrian "PENCAIRAN TUTUP AHLI WARIS" di menu Kasir untuk dieksekusi setelah ahli waris datang membawa KTP &amp; KK almarhum/almarhumah.
+                              </p>
+                          )}
+                          {selectedResignation.disbursementMethod === 'bank_transfer' && (
+                              <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                  Kalau disetujui, transfer dana &amp; penutupan akun dilakukan manual di luar sistem untuk saat ini (belum ada integrasi bank).
+                              </p>
+                          )}
+                          <div className="pt-2 flex gap-3">
+                              <button
+                                onClick={() => handleDecideResignation('reject')}
+                                className="flex-1 py-3 border border-red-300 text-red-600 rounded-xl font-bold hover:bg-red-50"
+                              >
+                                  Tolak
+                              </button>
+                              <button
+                                onClick={() => handleDecideResignation('approve')}
+                                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg"
+                              >
+                                  Setujui
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
+
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                   <h3 className="font-bold text-slate-800">Daftar Permintaan Pending ({approvals.length})</h3>

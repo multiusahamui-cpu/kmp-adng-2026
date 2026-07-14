@@ -2,9 +2,10 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { db } from '../db';
-import { users, regions, systemConfig, roleApplications, wallets, transactions, locations, kordinatorDetails } from '../db/schema';
-import { eq, or, like, desc, and, sql, inArray } from 'drizzle-orm';
+import { users, regions, systemConfig, roleApplications, wallets, transactions, locations, kordinatorDetails, resignationRequests } from '../db/schema';
+import { eq, or, like, desc, and, sql, inArray, getTableColumns } from 'drizzle-orm';
 import { successResponse, errorResponse } from '../utils/response';
+import { z } from 'zod';
 
 // --- EOD SETTLEMENT ---
 export const runEodSettlement = async (req: AuthRequest, res: Response) => {
@@ -197,16 +198,21 @@ export const approveRole = async (req: any, res: Response) => {
 };
 
 // --- USER MANAGEMENT ---
+// password & pin (bcrypt hash) sengaja dikecualikan -- admin tidak pernah
+// butuh hash-nya untuk fitur apapun, dan getTableColumns membuat exclude ini
+// otomatis ikut kalau nanti ada kolom sensitif baru ditambahkan ke schema.
+const { password: _password, pin: _pin, ...safeUserColumns } = getTableColumns(users);
+
 export const getAllUsers = async (req: any, res: Response) => {
     const { search } = req.query;
-    let query = db.select().from(users);
-    
+    let query = db.select(safeUserColumns).from(users);
+
     if (search) {
         const searchPattern = `%${search}%`;
         // @ts-ignore
         query = query.where(or(like(users.name, searchPattern), like(users.email, searchPattern)));
     }
-    
+
     const result = await query.limit(50);
     return successResponse(res, result, "Data Anggota");
 };
@@ -257,4 +263,117 @@ export const updateConfig = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         return errorResponse(res, "Gagal update config", 500);
     }
+};
+
+// --- RESIGNATION / ACCOUNT CLOSURE (Ahli Waris & Self-Resign) ---
+
+const heirResignationSchema = z.object({
+  userId: z.string().uuid("User ID tidak valid"),
+  reason: z.string().min(1, "Alasan wajib diisi"),
+  description: z.string().optional(),
+  disbursementMethod: z.enum(['bank_transfer', 'cash_pickup']),
+});
+
+// Dibuat Admin atas nama anggota yang meninggal, berdasarkan email dari ahli
+// waris tercatat di sistem (email itu sendiri diproses manual di luar sistem --
+// endpoint ini cuma titik masuk setelah Admin memverifikasi email tersebut).
+export const createHeirResignation = async (req: AuthRequest, res: Response) => {
+  try {
+    const data = heirResignationSchema.parse(req.body);
+
+    const [targetUser] = await db.select({ id: users.id, status: users.status }).from(users).where(eq(users.id, data.userId));
+    if (!targetUser) return errorResponse(res, "Anggota tidak ditemukan", 404);
+    if (targetUser.status === 'closed') return errorResponse(res, "Akun anggota ini sudah ditutup", 400);
+
+    const [existing] = await db.select().from(resignationRequests)
+      .where(and(eq(resignationRequests.userId, data.userId), eq(resignationRequests.status, 'pending')))
+      .limit(1);
+    if (existing) return errorResponse(res, "Anggota ini sudah punya permohonan berhenti yang sedang diproses.", 400);
+
+    const [request] = await db.insert(resignationRequests).values({
+      userId: data.userId,
+      reason: data.reason,
+      description: data.description,
+      status: 'pending',
+      caseType: 'heir_death',
+      disbursementMethod: data.disbursementMethod,
+      adminNotes: `Diajukan oleh Admin (${req.user.name || req.user.id}) atas nama ahli waris via email.`,
+    }).returning();
+
+    return successResponse(res, request, "Pengajuan penutupan akun (ahli waris) berhasil dibuat. Menunggu persetujuan GM.");
+  } catch (error: any) {
+    if (error.name === 'ZodError') return errorResponse(res, "Data tidak valid", 400, error.errors);
+    return errorResponse(res, "Gagal membuat pengajuan", 500);
+  }
+};
+
+// GM (dan Admin) melihat antrian permohonan berhenti -- gabungan self-resign & ahli waris.
+export const getPendingResignations = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await db.select({
+      id: resignationRequests.id,
+      userId: resignationRequests.userId,
+      userName: users.name,
+      userPhone: users.phone,
+      bankName: users.bankName,
+      bankAccountNumber: users.bankAccountNumber,
+      bankAccountHolder: users.bankAccountHolder,
+      reason: resignationRequests.reason,
+      description: resignationRequests.description,
+      status: resignationRequests.status,
+      caseType: resignationRequests.caseType,
+      disbursementMethod: resignationRequests.disbursementMethod,
+      createdAt: resignationRequests.createdAt,
+    })
+      .from(resignationRequests)
+      .innerJoin(users, eq(resignationRequests.userId, users.id))
+      .where(eq(resignationRequests.status, 'pending'))
+      .orderBy(desc(resignationRequests.createdAt));
+
+    return successResponse(res, result, "Daftar Permohonan Berhenti");
+  } catch (error) {
+    return errorResponse(res, "Gagal ambil data permohonan", 500);
+  }
+};
+
+const decideResignationSchema = z.object({
+  decision: z.enum(['approve', 'reject']),
+  notes: z.string().optional(),
+});
+
+// Keputusan GM. Approve + bank_transfer -> berhenti di 'approved' (transfer &
+// penutupan akun dilakukan manual di luar sistem untuk saat ini -- belum ada
+// integrasi bank). Approve + cash_pickup -> 'awaiting_cashier', dieksekusi
+// Kasir lewat treasuryController.executeHeirClosure.
+export const decideResignation = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { decision, notes } = decideResignationSchema.parse(req.body);
+
+    const [request] = await db.select().from(resignationRequests).where(eq(resignationRequests.id, id));
+    if (!request) return errorResponse(res, "Permohonan tidak ditemukan", 404);
+    if (request.status !== 'pending') return errorResponse(res, "Permohonan ini sudah diproses sebelumnya.", 400);
+
+    if (decision === 'reject') {
+      await db.update(resignationRequests)
+        .set({ status: 'rejected', adminNotes: notes, approvedAt: new Date(), approvedBy: req.user.id })
+        .where(eq(resignationRequests.id, id));
+      return successResponse(res, null, "Permohonan ditolak.");
+    }
+
+    const nextStatus = request.disbursementMethod === 'cash_pickup' ? 'awaiting_cashier' : 'approved';
+
+    await db.update(resignationRequests)
+      .set({ status: nextStatus, adminNotes: notes, approvedAt: new Date(), approvedBy: req.user.id })
+      .where(eq(resignationRequests.id, id));
+
+    const message = nextStatus === 'awaiting_cashier'
+      ? "Disetujui. Silahkan teruskan link eksekusi ke Kasir untuk pencairan tunai."
+      : "Disetujui. Transfer dana ke rekening terdaftar dan penutupan akun dilakukan manual di luar sistem untuk saat ini.";
+
+    return successResponse(res, { id, status: nextStatus }, message);
+  } catch (error: any) {
+    if (error.name === 'ZodError') return errorResponse(res, "Data tidak valid", 400, error.errors);
+    return errorResponse(res, "Gagal memproses keputusan", 500);
+  }
 };

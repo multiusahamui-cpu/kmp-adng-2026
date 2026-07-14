@@ -10,12 +10,13 @@ import { NetworkStatus } from '../components/NetworkStatus';
 interface LoginProps {
   onLogin: (user: User) => void;
   onRegisterClick: () => void;
-  onSwitchToInternal: () => void; 
+  onSwitchToInternal: () => void;
+  onForgotPasswordClick: () => void;
   error?: string | null;
-  logoutReason?: 'idle' | 'offline' | null; 
+  logoutReason?: 'idle' | 'offline' | null;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitchToInternal, error }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitchToInternal, onForgotPasswordClick, error }) => {
   const [step, setStep] = useState<'CREDENTIALS' | 'OTP'>('CREDENTIALS');
   const [tempUserId, setTempUserId] = useState<string | null>(null);
 
@@ -54,7 +55,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitch
         if (result.status === 'otp_required') {
             setTempUserId(result.userId!);
             setStep('OTP');
-            showToast("Kode OTP dikirim ke WhatsApp Anda.", "info");
+            showToast("Kode OTP dikirim ke email Anda.", "info");
         } 
         // JIKA LOGIN SUKSES (User Active OR Verified Phone)
         else if (result.status === 'success' && result.user) {
@@ -141,10 +142,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitch
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">Kata Sandi</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Kata Sandi</label>
+                      <button type="button" onClick={onForgotPasswordClick} className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline">
+                        Lupa Password?
+                      </button>
+                    </div>
                     <div className="relative">
                         <Key className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-                        <input 
+                        <input
                             type={showPassword ? "text" : "password"}
                             className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white dark:bg-slate-700 dark:text-white dark:border-slate-600"
                             placeholder="••••••••"
@@ -161,8 +167,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitch
                         </button>
                     </div>
                   </div>
-                  
-                  <button 
+
+                  <button
                     type="submit" 
                     disabled={isLoading}
                     className="w-full py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-lg flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
@@ -181,7 +187,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onRegisterClick, onSwitch
               <form onSubmit={handleOtpSubmit} className="space-y-6 animate-slide-up">
                   <div className="text-center">
                       <h2 className="text-lg font-bold text-slate-800 dark:text-white">Verifikasi OTP</h2>
-                      <p className="text-sm text-gray-500">Masukkan kode 6 digit yang dikirim ke WhatsApp Anda.</p>
+                      <p className="text-sm text-gray-500">Masukkan kode 6 digit yang dikirim ke email Anda.</p>
                   </div>
 
                   <input 

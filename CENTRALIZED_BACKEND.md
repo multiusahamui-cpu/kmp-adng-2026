@@ -140,22 +140,15 @@ Tidak memerlukan token Auth. Response berisi array produk dengan detail harga, g
 ## 4. Keamanan & Validasi (Server-Side)
 
 ### CORS (Cross-Origin Resource Sharing)
-Agar proyek lain (domain berbeda) bisa mengakses API, Admin Backend harus mendaftarkan domain tersebut di konfigurasi CORS `app.ts`.
+Web App utama (`/src`) tidak butuh entri CORS sama sekali — sejak single-domain deploy (lihat `CICD.md`), Web App dan API satu origin. Whitelist di `backend/src/app.ts` ini khusus untuk klien cross-origin: proyek eksternal (Website Profil terpisah, dsb) yang mengakses API dari domain lain.
 
-```typescript
-// Di backend/src/app.ts
-const allowedOrigins = [
-  'https://kmp-adng.id',           // Web App Utama
-  'https://landing.kmp-adng.id',   // Website Profil
-  'http://localhost:5173',       // Dev Frontend
-  'http://localhost:3000'        // Dev Website Lain
-];
+Default-nya sudah mencakup domain utama & landing page. Untuk menambah domain lain tanpa ubah kode, set environment variable `CORS_ALLOWED_ORIGINS` (dipisah koma) di server:
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+```env
+CORS_ALLOWED_ORIGINS=https://partner-lain.id,https://domain-lainnya.id
 ```
+
+Request tanpa header `Origin` (server-to-server, mobile app native HTTP client, curl) selalu diizinkan — CORS memang cuma berlaku untuk browser cross-origin JS, bukan mekanisme otentikasi.
 
 ### PIN Validation
 Untuk transaksi finansial dari platform manapun, validasi PIN dilakukan di Server. Jangan pernah memvalidasi PIN di sisi Client (Frontend).

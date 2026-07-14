@@ -1,13 +1,13 @@
 
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { getAllContent, createContent, deleteContent, moderateContent } from '../controllers/content.controller';
 
 const router = Router();
 
-router.get('/', getAllContent); // Public read
-router.post('/', authenticate, createContent);
-router.delete('/:id', authenticate, deleteContent);
-router.put('/:id/moderate', authenticate, moderateContent); // NEW
+router.get('/', getAllContent as RequestHandler); // Public read
+router.post('/', authenticate as RequestHandler, createContent as RequestHandler);
+router.delete('/:id', authenticate as RequestHandler, deleteContent as RequestHandler);
+router.put('/:id/moderate', authenticate as RequestHandler, moderateContent as RequestHandler); // NEW
 
 export default router;

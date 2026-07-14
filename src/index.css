@@ -1,5 +1,7 @@
 
-/* Removed @tailwind directives as we are using CDN */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

@@ -44,7 +44,7 @@ interface SidebarProps {
   wholesaleAccess?: 'invited' | 'active' | 'none';
   systemConfig: SystemConfig; 
   onLogout: () => void;
-  userStatus: 'active' | 'pending' | 'awaiting_payment'; 
+  userStatus: 'active' | 'pending' | 'awaiting_payment' | 'suspended' | 'rejected' | 'inactive' | 'closed';
   kycVerified?: boolean; 
 }
 

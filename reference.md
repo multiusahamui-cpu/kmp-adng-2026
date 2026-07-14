@@ -69,12 +69,13 @@ Untuk mendukung ekosistem KMP-ADNG (Website Official, Web App Member, Mobile App
 
 ### Topologi
 *   **Database (PostgreSQL):** Satu sumber kebenaran (*Single Source of Truth*). Tabel `users`, `wallets`, `transactions` dipakai bersama.
-*   **Backend API (Express.js):** Satu pintu gerbang logic.
-    *   URL: `https://api.kmp-adng.id/v1`
+*   **Backend API (Express.js):** Satu pintu gerbang logic. Sejak konsolidasi ke *single-domain deploy* (lihat bagian 5), Express yang sama juga menyajikan Web App, jadi:
+    *   Web App (`/src`) memanggil API lewat relative path `/api/v1` (same-origin, tanpa perlu `VITE_API_URL`).
+    *   Klien eksternal (Mobile App, Landing Page) memanggil lewat domain publik: `https://kmp-adng.id/api/v1`.
 *   **Frontend Clients:**
     1.  **Website Official (Landing Page):** Menggunakan API `/auth/register` untuk pendaftaran anggota baru.
-    2.  **Web App (Dashboard):** Menggunakan API lengkap untuk transaksi.
-    3.  **Mobile App:** Menggunakan API yang sama persis dengan Web App.
+    2.  **Web App (Dashboard):** Menggunakan API lengkap untuk transaksi — same-origin dengan API sejak single-domain deploy.
+    3.  **Mobile App:** Menggunakan API yang sama persis dengan Web App, cross-origin.
 
 ### Keuntungan
 User yang mendaftar di Website Official tidak perlu mendaftar ulang di Aplikasi. Cukup login menggunakan kredensial yang sama.
@@ -109,7 +110,33 @@ Karena browser modern memblokir akses ke **MAC Address** demi privasi, kita meng
 
 ---
 
-## 5. Migrasi ke Mobile (Android/iOS)
+## 5. Konsolidasi Monorepo: Single-Domain Deploy
+
+### Masalah Lama
+Frontend (`/src`, Vite/React) dan Backend (`/backend`, Express) sebelumnya di-deploy sebagai **dua pipeline terpisah** ke dua domain berbeda (frontend ke static hosting seperti Vercel/Netlify, backend ke VPS dengan domain `api.kmp-adng.id`). Konsekuensinya:
+*   Dua kali proses deploy setiap rilis.
+*   `VITE_API_URL` harus di-inject manual saat build frontend, rawan salah konfigurasi antar environment.
+*   CORS harus dikelola aktif untuk mengizinkan domain frontend mengakses domain backend.
+
+### Solusi: Satu Proses, Satu Domain
+`vite.config.ts` diubah supaya `build.outDir` menaruh hasil build langsung ke `backend/public/dist`. Backend (`backend/src/app.ts`) sebenarnya *sudah* punya logic untuk serve static frontend + SPA fallback dari folder itu — sebelumnya cuma tidak pernah dipakai karena frontend di-deploy ke tempat lain. Sekarang logic itu yang jadi jalur utama:
+
+```bash
+npm install   # root -> otomatis install backend juga (hook postinstall)
+npm run build # tsc && vite build (-> backend/public/dist), lalu compile backend TS
+npm start     # satu proses Express: serve frontend + /api/v1 dari satu port/domain
+```
+
+Backend juga diubah untuk mendengarkan `process.env.PORT` (bukan hardcode `3000`), karena kebanyakan platform PaaS (Render/Railway/dsb) inject port secara dinamis.
+
+### Dampak
+*   `VITE_API_URL` sekarang **dikosongkan** di `.env` — frontend otomatis pakai relative path `/api/v1` karena same-origin dengan API.
+*   Klien eksternal (Mobile App, Landing Page terpisah) tetap bisa akses API lewat domain publik seperti biasa (lihat bagian 3) — yang berubah hanya Web App utama, bukan kontrak API-nya.
+*   Detail perintah deploy per-platform PaaS ada di [CICD.md](CICD.md).
+
+---
+
+## 6. Migrasi ke Mobile (Android/iOS)
 
 Poin penting saat mengonversi kode React ini ke React Native atau Capacitor:
 

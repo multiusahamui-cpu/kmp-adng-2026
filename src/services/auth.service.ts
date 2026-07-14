@@ -88,15 +88,27 @@ export const authService = {
   register: async (
     name: string,
     phone: string,
+    email: string,
     password: string,
     referralCode?: string,
   ) => {
     const response = await api.post("/auth/register", {
       name,
       phone,
+      email,
       password,
       referralCode,
     });
+    return response.data;
+  },
+
+  forgotPassword: async (identifier: string) => {
+    const response = await api.post("/auth/forgot-password", { identifier });
+    return response.data;
+  },
+
+  resetPassword: async (uid: string, token: string, newPassword: string) => {
+    const response = await api.post("/auth/reset-password", { uid, token, newPassword });
     return response.data;
   },
 
@@ -110,6 +122,18 @@ export const authService = {
   },
 
   logout: () => {
+    // Capture the token before clearing so we can still ask the server to
+    // invalidate it (bumps tokenVersion server-side) -- without this, "logout"
+    // only ever cleared localStorage and the token stayed valid until it
+    // naturally expired. Fire-and-forget: the client-side clear below is
+    // what actually ends the session for this device regardless of whether
+    // the network call succeeds.
+    const token = localStorage.getItem("token");
     localStorage.clear();
+    if (token) {
+      api
+        .post("/auth/logout", null, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {});
+    }
   },
 };

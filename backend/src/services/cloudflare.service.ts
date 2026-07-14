@@ -4,6 +4,14 @@ import path from 'path';
 const CLOUDFLARE_API_TOKEN = process.env.CF_API_TOKEN;
 const CLOUDFLARE_ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
 
+// Shape of the Cloudflare Images v1 upload response we actually read.
+// https://developers.cloudflare.com/api/operations/cloudflare-images-upload-an-image-via-url
+interface CloudflareImagesResponse {
+  success: boolean;
+  errors?: { code: number; message: string }[];
+  result?: { variants: string[] };
+}
+
 export const uploadToCloudflare = async (filePath: string): Promise<string> => {
   if (!CLOUDFLARE_API_TOKEN || !CLOUDFLARE_ACCOUNT_ID) {
     console.warn('Cloudflare credentials missing. Falling back to local URL.');
@@ -28,16 +36,16 @@ export const uploadToCloudflare = async (filePath: string): Promise<string> => {
       }
     );
 
-    const data = await response.json();
+    const data = await response.json() as CloudflareImagesResponse;
 
     if (!data.success) {
       console.error('Cloudflare upload failed:', data.errors);
-      throw new Error(`Cloudflare upload failed: ${data.errors[0]?.message}`);
+      throw new Error(`Cloudflare upload failed: ${data.errors?.[0]?.message}`);
     }
 
     // Return the public variant URL (usually the first one or 'public')
     // data.result.variants is an array of URLs
-    return data.result.variants[0];
+    return data.result!.variants[0];
   } catch (error) {
     console.error('Error uploading to Cloudflare:', error);
     throw error;
